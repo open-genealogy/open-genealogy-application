@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/crates/oxc_linter/src/rules.rs",
+  "rules": {
+    "no-unused-vars": "error",
+    "no-console": "warn",
+    "eqeqeq": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "ignorePatterns": [".next", "node_modules", "drizzle", "scripts"]
+}
