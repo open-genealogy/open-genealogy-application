@@ -6,18 +6,20 @@ import {
   Share2Icon,
 } from "@radix-ui/react-icons";
 import Link from "next/link";
+import { getCountryCount } from "@/db/queries/map";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const countryCount = await getCountryCount();
   return (
     <Box>
-      <HeroSection />
+      <HeroSection countryCount={countryCount} />
       <FeaturesSection />
       <CallToActionSection />
     </Box>
   );
 }
 
-function HeroSection() {
+function HeroSection({ countryCount }: Readonly<{ countryCount: number }>) {
   return (
     <Section size="3" style={{ background: "var(--indigo-2)" }}>
       <Container size="3" px="4">
@@ -44,7 +46,7 @@ function HeroSection() {
               <Link href="/persons">Découvrez les premières personnes →</Link>
             </Button>
             <Button size="4" variant="outline" asChild>
-              <Link href="/map">Carte des origines →</Link>
+              <Link href="/map">Carte des origines ({countryCount} pays) →</Link>
             </Button>
           </Flex>
         </Flex>

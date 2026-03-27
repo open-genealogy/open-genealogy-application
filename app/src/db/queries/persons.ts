@@ -1,6 +1,6 @@
 import { db } from "../index";
-import { persons } from "../schema";
-import { ilike, or, sql } from "drizzle-orm";
+import { persons, events, eventPersons } from "../schema";
+import { ilike, or, and, sql, inArray, eq, isNotNull } from "drizzle-orm";
 
 export type PersonListItem = {
   id: string;
@@ -11,40 +11,67 @@ export type PersonListItem = {
 
 export async function getPersons(params: {
   q?: string;
+  countries?: string[];
+  yearFrom?: number;
+  yearTo?: number;
   page?: number;
   pageSize?: number;
 }): Promise<{ data: PersonListItem[]; total: number }> {
-  const { q, page = 1, pageSize = 50 } = params;
+  const { q, countries, yearFrom, yearTo, page = 1, pageSize = 50 } = params;
   const offset = (page - 1) * pageSize;
 
-  const baseQuery = db
-    .select({
-      id: persons.id,
-      given_name: persons.given_name,
-      family_name: persons.family_name,
-      sex: persons.sex,
-    })
-    .from(persons);
-
-  const countQuery = db.select({ count: sql<number>`count(*)` }).from(persons);
+  const conditions = [];
 
   if (q && q.trim()) {
     const term = `%${q.trim()}%`;
-    const condition = or(
-      ilike(persons.given_name, term),
-      ilike(persons.family_name, term),
+    conditions.push(
+      or(ilike(persons.given_name, term), ilike(persons.family_name, term)),
     );
-    const [data, countResult] = await Promise.all([
-      baseQuery.where(condition).limit(pageSize).offset(offset),
-      countQuery.where(condition),
-    ]);
-    return { data, total: Number(countResult[0]?.count ?? 0) };
   }
 
+  const hasCountryFilter = countries && countries.length > 0;
+  const hasYearFilter = yearFrom !== undefined || yearTo !== undefined;
+
+  if (hasCountryFilter || hasYearFilter) {
+    const eventConditions = [];
+
+    if (hasCountryFilter) {
+      eventConditions.push(inArray(events.country, countries!));
+    }
+    if (yearFrom !== undefined) {
+      eventConditions.push(
+        sql`CAST(substring(${events.date_text} FROM '[0-9]{4}') AS integer) >= ${yearFrom}`,
+      );
+    }
+    if (yearTo !== undefined) {
+      eventConditions.push(
+        sql`CAST(substring(${events.date_text} FROM '[0-9]{4}') AS integer) <= ${yearTo}`,
+      );
+    }
+
+    const personIdsSubquery = db
+      .selectDistinct({ person_id: eventPersons.person_id })
+      .from(eventPersons)
+      .innerJoin(events, eq(events.id, eventPersons.event_id))
+      .where(and(...eventConditions));
+
+    conditions.push(inArray(persons.id, personIdsSubquery));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const baseSelect = {
+    id: persons.id,
+    given_name: persons.given_name,
+    family_name: persons.family_name,
+    sex: persons.sex,
+  };
+
   const [data, countResult] = await Promise.all([
-    baseQuery.limit(pageSize).offset(offset),
-    countQuery,
+    db.select(baseSelect).from(persons).where(whereClause).limit(pageSize).offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(persons).where(whereClause),
   ]);
+
   return { data, total: Number(countResult[0]?.count ?? 0) };
 }
 
