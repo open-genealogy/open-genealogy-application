@@ -39,9 +39,14 @@ function HeroSection() {
             de contribuer à une carte du monde libre, OpenGenealogy ambitionne de faire
             la même chose pour les arbres généalogiques de l'humanité.
           </Text>
-          <Button size="4" asChild>
-            <Link href="/persons">Découvrez les premières personnes →</Link>
-          </Button>
+          <Flex gap="3" justify="center" wrap="wrap">
+            <Button size="4" asChild>
+              <Link href="/persons">Découvrez les premières personnes →</Link>
+            </Button>
+            <Button size="4" variant="outline" asChild>
+              <Link href="/map">Carte des origines →</Link>
+            </Button>
+          </Flex>
         </Flex>
       </Container>
     </Section>

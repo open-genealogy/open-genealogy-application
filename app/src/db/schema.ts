@@ -15,6 +15,7 @@ export const events = pgTable("events", {
   kind: text("kind").notNull(),
   date_text: text("date_text"),
   place: text("place"),
+  country: text("country"),
   sources: jsonb("sources"),
 });
 

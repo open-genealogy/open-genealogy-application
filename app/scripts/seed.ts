@@ -6,6 +6,7 @@ import { resolve } from "path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { parseGedcomBuffer } from "../src/lib/ged-parser";
+import { placeToCountryCode } from "../src/lib/country-codes";
 import { persons, events, eventPersons, bonds } from "../src/db/schema";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -57,7 +58,7 @@ async function main() {
 
   // Build events from individuals
   console.log("Inserting events…");
-  const eventRows: Array<{ id: string; kind: string; date_text: string | null; place: string | null; sources: unknown }> = [];
+  const eventRows: Array<{ id: string; kind: string; date_text: string | null; place: string | null; country: string | null; sources: unknown }> = [];
   const epRows: Array<{ event_id: string; person_id: string }> = [];
 
   let eventCounter = 0;
@@ -69,6 +70,7 @@ async function main() {
         kind: ev.kind,
         date_text: ev.date?.raw ?? null,
         place: ev.place ?? null,
+        country: placeToCountryCode(ev.place ?? null),
         sources: ev.sources.length > 0 ? ev.sources : null,
       });
       epRows.push({ event_id: eventId, person_id: ind.id });
@@ -88,6 +90,7 @@ async function main() {
         kind: ev.kind,
         date_text: ev.date?.raw ?? null,
         place: ev.place ?? null,
+        country: placeToCountryCode(ev.place ?? null),
         sources: ev.sources.length > 0 ? ev.sources : null,
       });
       for (const pid of participants) {
